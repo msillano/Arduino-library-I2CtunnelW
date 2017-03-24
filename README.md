@@ -12,7 +12,7 @@ note: tested using Arduino YUN and DS1307, AT24C32 - The code is optimized for s
 
 This library uses Wire library (https://www.arduino.cc/en/reference/wire)
 
-The analog I2Ctunnel uses I2C library (https://github.com/rambo/I2C)
+The analog ![I2Ctunnel](https://github.com/msillano/Arduino-library-I2Ctunnel) uses I2C library (https://github.com/rambo/I2C)
 
 
 
