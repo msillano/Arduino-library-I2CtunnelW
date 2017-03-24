@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<!--
+  I2CEEPROMjscript.html - Example client for IC2tunnel comunications.
+  Copyright (c) 2014 Marco Sillano.  All right reserved.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+-->
+<!--
+This example shows the use of I2Ctunnel library to read/write EEPROM data
+using AJAX (zepto) and javascript. 
+
+USE
+Start I2Ctest sketch, start Console, then open this file in a browser.
+
+HARDWARE
+This example requires an EEPROM (AT24C32) on Arduino Yùn.
+-->
+<html>
+	<head>      
+<!-- uses  zepto -->
+<script type="text/javascript" src="zepto.min.js"></script>
+
+<script type="text/javascript">  
+//  I2Ctunnel client for AT24C32 using javascript
+
+address1 = "0x0000";      
+address2 = "0x0020";      
+ 
+function saveUInt(){ 
+// save the value in 2 bytes 
+  var s =  $('#newInt').val();
+// string to int
+  eval("var x = "+s+";");  
+  var y = "0000" + x.toString(16);   
+  y =  y.substr(y.length - 4);
+  var command ='/arduino/I2C/0x50/W/'+ address2 + '/2/' + y; 
+  $.get(command);    
+}                        
+ 
+function getUInt() {          
+$.get('/arduino/I2C/0x50/W/'+ address2 + '/2', function(buffer){     
+// asciiHEX (packed bcd) to String
+    var s = "0x"+buffer;
+    eval("var x = "+s+";");  
+    var data = x.toString();    
+    // updates html                                         
+     $('#aInt').html(data); });                       
+}            
+
+
+function getString(){  
+// get a string from EEPROM [address1](read 30 bytes)
+$.get('/arduino/I2C/0x50/W/'+ address1 + '/30', function(buffer){    
+     var s = charHEXtoString(buffer); 
+     // updates html                                         
+     $('#aString').html(s); });                       
+}            
+  
+function saveString(){  
+var s =  $('#newString').val();
+// the limit is 30 bytes, and not 32! strange!
+// maybe some size limitation in Wire (?)
+if (s.length > 29){
+    s = s.substring(0,29);    
+    } 
+var d = stringTocharHEX(s); 
+var command ='/arduino/I2C/0x50/W/'+ address1 + '/' +  (d.length/2) + '/' + d; 
+$.get(command);    
+} 
+
+function stringTocharHEX (txt){
+// string to charHEX 
+// add null (00) at end
+var data = "";
+for (i=0; i< txt.length; i++){       
+    var c = txt.charCodeAt(i); 
+    var x = c.toString(16);   
+    if (x.length == 1) {
+    data += "0" + x;
+    } else {
+    data += x;
+    }
+ }       
+data += "00";
+return(data);
+}
+
+function charHEXtoString (bcd){
+// max 30x2 charHEX
+// gets a string until null
+     var data = "";
+     for(i= 0; i<30; i++) {
+        var s = "0x" + bcd[2*i] +bcd[2*i+1];
+        // from string like "0x48" to int
+        eval("var x = "+ s + ";");
+        if (x == 0) {
+           return(data);
+        }
+        // from Int to String
+        data += String.fromCharCode(x);
+     }
+ return(data);
+}
+       
+</script>
+
+	</head>                                   
+	<body bgcolor='lime'>  
+    <h1> I2C REST tunnel for EEPROM using javascript</h1>
+	    <table width=100% border=0 summary="">
+	<tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+     <tr>
+		<td colspan=2>Writing an UInt to address 0x0020 (0-65535 or 0x0-0xFFFF ) </td>
+	</tr>
+     <tr>                                                  
+		<td width=200><input type="text" id="newInt" size="5" maxlength="256">
+</td>       
+		<td><button onclick="saveUInt();">UPDATE</button></td>
+	</tr>  
+    <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+    <tr>
+		<td colspan=2>Reading an UInt from address 0x0020</td>
+	</tr>
+     <tr>
+		<td width=200><span id="aInt">.........</span></td>       
+		<td><button onclick="getUInt();">REFRESH</button></td>
+	</tr>  
+    <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+          <tr>
+		<td colspan=2>Writing a String to address 0x0000 (max 29 char) </td>
+	</tr>
+     <tr>                                                  
+		<td width=200><input type="text" id="newString" size="40" maxlength="256">
+</td>       
+		<td><button onclick="saveString();">UPDATE</button></td>
+	</tr>  
+    <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+    <tr>
+		<td colspan=2>Reading a String from address 0x0000</td>
+	</tr>
+     <tr>
+		<td width=200><span id="aString">..............</span></td>       
+		<td><button onclick="getString();">REFRESH</button></td>
+	</tr>  
+    <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+
+   </table>   
+ 	</body>
+</html>
+         

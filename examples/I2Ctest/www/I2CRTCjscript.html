@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<!--
+  I2CRTCjscript.html - Example client for IC2tunnel comunications.
+  Copyright (c) 2014 Marco Sillano.  All right reserved.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+-->
+<!--
+This example shows the use of I2Ctunnel library to read/write RTC data
+using AJAX (zepto) and javascript. 
+
+USE
+Start I2Ctest sketch, start Console, then open this file in a browser.
+
+HARDWARE
+This example requires a RTC (DS1307) on Arduino Yùn.
+-->
+<html>
+	<head>      
+<!-- uses  zepto -->
+<script type="text/javascript" src="zepto.min.js"></script>
+
+<script type="text/javascript">  
+//  I2Ctunnel for DS1307 using javascript 
+
+function getLocalTimeStamp(){    
+// use date() to get data and time from local PC,
+// then format timeStamp and set #timestamp_local
+ d = new Date();                       //Create Date object.  
+// process date to timeStamp
+ var s = d.getFullYear()+ "-";   
+   s += (d.getMonth() <9? "0"+ (d.getMonth() + 1):(d.getMonth() + 1)) + "-";   
+   s += (d.getDate() <10? "0"+ d.getDate():d.getDate()) + " ";                      
+   s += (d.getHours() <10? "0"+ d.getHours():d.getHours()) + ":";
+   s += (d.getMinutes() <10? "0"+ d.getMinutes():d.getMinutes()) + ":"; 
+   s += (d.getSeconds() <10? "0"+ d.getSeconds():d.getSeconds());
+ $('#timestamp_local').html(s);
+ }      
+             
+function getI2CtimeStamp(){
+// execute a direct I2C read to get data and time from DS1307,
+// then format timeStamp and set #timestamp_i2c
+$.get('/arduino/I2C/0x68/B/0/7', function(buffer){     
+// asciiHEX (packed bcd) to timeStamp
+     var data = "20" + buffer[12]+buffer[13]+"-" ;   
+     data += buffer[10] + buffer[11] + "-";                                           
+     data += buffer[8] + buffer[9] + " ";                                           
+     data += buffer[4] + buffer[5] + ":";                                           
+     data += buffer[2] + buffer[3] + ":";                                           
+     data += buffer[0] + buffer[1] ;   
+// updates HTML                                         
+     $('#timestamp_i2c').html(data); });                       
+}            
+
+function setI2CtimerFromlocal(){     
+// use date() to get data and time from local PC,
+//  then format I2C command string and update RTC
+var d, s = "/arduino/I2C/0x68/B/0/7/";         //Declare variables.
+   d = new Date();                             //Create Date object.  
+// process date to asciiHEX (packed bcd) for I2C  (see datasheet)
+//  like:  31201900300614
+//         ssmmhh  DDMMAA 
+   s += (d.getSeconds() <10? "0"+ d.getSeconds():d.getSeconds());
+   s += (d.getMinutes() <10? "0"+ d.getMinutes():d.getMinutes());
+   s += (d.getHours() <10? "0"+ d.getHours():d.getHours());
+   s += "00";
+   s += (d.getDate() <10? "0"+ d.getDate():d.getDate());
+   s += (d.getMonth() <9? "0"+ (d.getMonth() + 1):(d.getMonth() + 1));  
+   s += d.getFullYear()%100; 
+ // send to arduino
+$.get(s);    
+}     
+   
+function setI2Ctimer(hour, minute, second){  
+// get combos values and send it to RTC 
+  hour   =  $('#hour').val();
+  minute =  $('#minute').val();
+  second =  $('#second').val();
+  // wites only 3 bytes: ss,mm,hh
+  command =  '/arduino/I2C/0x68/B/0/3/'+second+minute+hour;
+  $.get(command);     
+ }            
+
+       
+</script>
+
+	</head>                                   
+	<body bgcolor='lime'>  
+    <h1> I2C REST tunnel for RTC using javascript</h1>
+	    <table width=100% border=0 summary="">
+	<tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+    <tr>
+		<td colspan=2>Browser time:</td>
+	</tr>
+     <tr>
+		<td width=200><span id="timestamp_local">YYYY-MM-DD hh:mm:ss</span></td>       
+		<td><button onclick="getLocalTimeStamp();">REFRESH</button></td>
+	</tr>  
+    <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+     <tr>
+		<td colspan=2>RTC time on arduino:</td>
+	</tr>
+     <tr>
+		<td width=200><span id="timestamp_i2c">YYYY-MM-DD hh:mm:ss</span></td>       
+		<td><button onclick="getI2CtimeStamp();">REFRESH</button></td>
+	</tr>  
+    <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+     <tr>
+		<td width=200>Adjust RTC date+time from local</td>       
+		<td><button onclick="setI2CtimerFromlocal();">UPDATE</button></td>
+	</tr>     
+        <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>                       
+       <tr>
+		<td colspan=2>Adjust RTC time on arduino:</td>
+	</tr>
+  <tr>
+		<td width=200>&nbsp;<select id="hour">
+                   	<option value="00"> 00</option>
+                   	<option value="01"> 01</option>
+                   	<option value="02"> 02</option>
+                   	<option value="03"> 03</option>
+                   	<option value="04"> 04</option>
+                  	<option value="05"> 05</option>
+                   	<option value="06"> 06</option>
+                   	<option value="07"> 07</option>
+                   	<option value="08"> 08</option>
+                   	<option value="09"> 09</option>
+                   	<option value="10"> 10</option>
+                   	<option value="11"> 11</option>
+                   	<option value="12"> 12</option>
+                   	<option value="13"> 13</option>
+                   	<option value="14"> 14</option>
+                  	<option value="15"> 15</option>
+                   	<option value="16"> 16</option>
+                   	<option value="17"> 17</option>
+                   	<option value="18"> 18</option>
+                   	<option value="19"> 19</option>
+                   	<option value="20"> 20</option>
+                   	<option value="21"> 21</option>
+                   	<option value="22"> 22</option>
+                   	<option value="23"> 23</option>
+                       </select>
+     :<select id="minute">
+                   	<option value="00"> 00</option>
+                   	<option value="01"> 01</option>
+                   	<option value="02"> 02</option>
+                   	<option value="03"> 03</option>
+                   	<option value="04"> 04</option>
+                  	<option value="05"> 05</option>
+                   	<option value="06"> 06</option>
+                   	<option value="07"> 07</option>
+                   	<option value="08"> 08</option>
+                   	<option value="09"> 09</option>
+                   	<option value="10"> 10</option>
+                   	<option value="11"> 11</option>
+                   	<option value="12"> 12</option>
+                   	<option value="13"> 13</option>
+                   	<option value="14"> 14</option>
+                  	<option value="15"> 15</option>
+                   	<option value="16"> 16</option>
+                   	<option value="17"> 17</option>
+                   	<option value="18"> 18</option>
+                   	<option value="19"> 19</option>
+                 	<option value="20"> 20</option>
+                   	<option value="21"> 21</option>
+                   	<option value="22"> 22</option>
+                   	<option value="23"> 23</option>
+                   	<option value="24"> 24</option>
+                  	<option value="25"> 25</option>
+                   	<option value="26"> 26</option>
+                   	<option value="27"> 27</option>
+                   	<option value="28"> 28</option>
+                   	<option value="29"> 29</option>
+                   	<option value="30"> 30</option>
+                   	<option value="31"> 31</option>
+                   	<option value="32"> 32</option>
+                   	<option value="33"> 33</option>
+                   	<option value="34"> 34</option>
+                  	<option value="35"> 35</option>
+                   	<option value="36"> 36</option>
+                   	<option value="37"> 37</option>
+                   	<option value="38"> 38</option>
+                   	<option value="39"> 39</option>
+                 	<option value="40"> 40</option>
+                   	<option value="41"> 41</option>
+                   	<option value="42"> 42</option>
+                   	<option value="43"> 43</option>
+                   	<option value="44"> 44</option>
+                  	<option value="45"> 45</option>
+                   	<option value="46"> 46</option>
+                   	<option value="47"> 47</option>
+                   	<option value="48"> 48</option>
+                   	<option value="49"> 49</option>
+                   	<option value="50"> 50</option>
+                   	<option value="51"> 51</option>
+                   	<option value="52"> 52</option>
+                   	<option value="53"> 53</option>
+                   	<option value="54"> 54</option>
+                  	<option value="55"> 55</option>
+                   	<option value="56"> 56</option>
+                   	<option value="57"> 57</option>
+                   	<option value="58"> 58</option>
+                   	<option value="59"> 59</option>
+                       </select>
+                   
+           :<select id="second">
+                   	<option value="00"> 00</option>
+                   	<option value="01"> 01</option>
+                   	<option value="02"> 02</option>
+                   	<option value="03"> 03</option>
+                   	<option value="04"> 04</option>
+                  	<option value="05"> 05</option>
+                   	<option value="06"> 06</option>
+                   	<option value="07"> 07</option>
+                   	<option value="08"> 08</option>
+                   	<option value="09"> 09</option>
+                   	<option value="10"> 10</option>
+                   	<option value="11"> 11</option>
+                   	<option value="12"> 12</option>
+                   	<option value="13"> 13</option>
+                   	<option value="14"> 14</option>
+                  	<option value="15"> 15</option>
+                   	<option value="16"> 16</option>
+                   	<option value="17"> 17</option>
+                   	<option value="18"> 18</option>
+                   	<option value="19"> 19</option>
+                 	<option value="20"> 20</option>
+                   	<option value="21"> 21</option>
+                   	<option value="22"> 22</option>
+                   	<option value="23"> 23</option>
+                   	<option value="24"> 24</option>
+                  	<option value="25"> 25</option>
+                   	<option value="26"> 26</option>
+                   	<option value="27"> 27</option>
+                   	<option value="28"> 28</option>
+                   	<option value="29"> 29</option>
+                   	<option value="30"> 30</option>
+                   	<option value="31"> 31</option>
+                   	<option value="32"> 32</option>
+                   	<option value="33"> 33</option>
+                   	<option value="34"> 34</option>
+                  	<option value="35"> 35</option>
+                   	<option value="36"> 36</option>
+                   	<option value="37"> 37</option>
+                   	<option value="38"> 38</option>
+                   	<option value="39"> 39</option>
+                 	<option value="40"> 40</option>
+                   	<option value="41"> 41</option>
+                   	<option value="42"> 42</option>
+                   	<option value="43"> 43</option>
+                   	<option value="44"> 44</option>
+                  	<option value="45"> 45</option>
+                   	<option value="46"> 46</option>
+                   	<option value="47"> 47</option>
+                   	<option value="48"> 48</option>
+                   	<option value="49"> 49</option>
+                   	<option value="50"> 50</option>
+                   	<option value="51"> 51</option>
+                   	<option value="52"> 52</option>
+                   	<option value="53"> 53</option>
+                   	<option value="54"> 54</option>
+                  	<option value="55"> 55</option>
+                   	<option value="56"> 56</option>
+                   	<option value="57"> 57</option>
+                   	<option value="58"> 58</option>
+                   	<option value="59"> 59</option>
+                       </select>
+                   
+      
+  </td>       
+		<td><button onclick="setI2Ctimer();">UPDATE</button></td>
+	</tr>     
+        <tr>
+		<td colspan=2><hr color="050000"></td>
+	</tr>
+
+   </table>   
+ 	</body>
+</html>
+
+         
