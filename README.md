@@ -9,3 +9,11 @@ This library allows to execute some tasks on linux side (using python, php, java
 In examples you can see how to set the linux clock from RTC, or how to adjust the RTC clock from a WEB page, or how put and get a string in EEPROM.
 
 note: tested using Arduino YUN and DS1307, AT24C32 - The code is optimized for smallest footprint.
+
+This library uses Wire library (https://www.arduino.cc/en/reference/wire)
+
+The analog I2Ctunnel uses I2C library (https://github.com/rambo/I2C)
+
+
+
+
