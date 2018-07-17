@@ -12,7 +12,7 @@
 # Classes (KEYWORD3)
 #######################################
 
-I2Ctunnel_t KEYWORD3
+I2Ctunnel_t	KEYWORD3
 
 #######################################
 # Instances (KEYWORD2)
